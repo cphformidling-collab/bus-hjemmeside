@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Copenhagen Travel Coaches</title>
+  <meta name="description" content="Buskørsel i København og omegn med prisberegner og hurtig forespørgsel." />
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <style>
+    :root {
+      --orange: #F76B1C;
+      --orange-soft: #FFF3E8;
+      --text: #0f172a;
+      --muted: #64748b;
+      --line: #e5e7eb;
+      --bg: #fafafa;
+      --card: #ffffff;
+      --success: #14532d;
+      --success-bg: #ecfdf5;
+      --error: #b91c1c;
+      --error-bg: #fef2f2;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.45;
+    }
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    .container { width: min(1200px, calc(100% - 32px)); margin: 0 auto; }
+    .header {
+      position: sticky; top: 0; z-index: 30;
+      background: rgba(255,255,255,.86);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(15,23,42,.06);
+    }
+    .header-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; padding: 12px 0;
+    }
+    .brand { display:flex; align-items:center; gap:12px; min-width:0; }
+    .brand img { height: 40px; width: auto; }
+    .brand-title { font-weight: 700; color: var(--orange); font-size: 18px; }
+    .brand-sub { font-size: 12px; color: var(--muted); }
+    .nav { display:flex; gap:24px; font-size:14px; color:#475569; }
+    .nav a:hover { color: #000; }
+    .cta-top {
+      border: 1px solid rgba(15,23,42,.08); background:#111827; color:white;
+      padding:10px 18px; border-radius:999px; font-weight:600; font-size:14px;
+    }
+    .hero { padding: 36px 0 26px; }
+    .badge {
+      display:inline-flex; align-items:center; border:1px solid rgba(15,23,42,.1);
+      background:white; padding:8px 12px; border-radius:999px; font-size:11px;
+      text-transform:uppercase; letter-spacing:.14em; color:#52525b; box-shadow:0 1px 2px rgba(0,0,0,.03);
+    }
+    .hero h1 {
+      margin: 18px 0 0; font-size: clamp(34px, 6vw, 72px); line-height: .98; letter-spacing: -.03em;
+    }
+    .hero p.lead {
+      margin: 18px 0 0; max-width: 760px; color:#52525b; font-size: clamp(16px, 2vw, 20px); line-height:1.7;
+    }
+    .hero-grid {
+      margin-top: 28px; display:grid; gap: 24px; align-items:start;
+      grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
+    }
+    .panel, .visual, .mini-card, .offer-card, .contact-card { background:var(--card); border:1px solid var(--line); }
+    .panel { border-radius: 24px; box-shadow: 0 1px 3px rgba(15,23,42,.08); overflow:hidden; }
+    .panel-head { padding:24px; border-bottom:1px solid #fed7aa; background:linear-gradient(90deg, #fff7ed 0%, #fff 60%); }
+    .pill {
+      display:inline-flex; border:1px solid #fed7aa; background:var(--orange-soft); color:var(--orange);
+      padding:6px 10px; border-radius:999px; text-transform:uppercase; letter-spacing:.14em;
+      font-size:11px; font-weight:700;
+    }
+    .panel-head h2 { margin:14px 0 0; font-size:34px; letter-spacing:-.02em; }
+    .panel-head p { margin:10px 0 0; color:var(--muted); font-size:14px; }
+    .panel-body { padding:24px; display:grid; gap:24px; }
+    .form-grid { display:grid; gap:16px; grid-template-columns: 1fr 1fr; }
+    .form-grid .full { grid-column: 1 / -1; }
+    label { display:block; margin:0 0 8px; font-size:14px; font-weight:600; color:#334155; }
+    input, select {
+      width:100%; height:48px; padding:0 14px; border-radius:14px; border:1px solid #cbd5e1; background:#fff;
+      font-size:15px; color:var(--text); outline:none;
+    }
+    input:focus, select:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(247,107,28,.12); }
+    .toggle-row, .summary-box, .return-box, .message, .submit-receipt { border-radius: 22px; }
+    .toggle-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .toggle-row {
+      border:1px solid var(--line); padding:16px; display:flex; align-items:center; justify-content:space-between;
+      gap:16px;
+    }
+    .toggle-row small { color: var(--muted); }
+    .summary-box, .return-box {
+      border:1px solid #fed7aa; background: linear-gradient(180deg, #fff7ed, #fff); padding:20px;
+    }
+    .summary-box .price, .return-box .price { color:var(--orange); font-weight:700; letter-spacing:-.03em; }
+    .summary-box .price { font-size:50px; }
+    .return-box .price { font-size:38px; }
+    .btn, .offer-button, .small-btn {
+      appearance:none; border:none; cursor:pointer; border-radius:14px; font-weight:700;
+      transition: .18s ease;
+    }
+    .btn-primary { background: var(--orange); color:white; height:56px; width:100%; font-size:16px; }
+    .btn-primary:hover { background:#e55f00; }
+    .btn-dark { background:#0f172a; color:white; height:48px; width:100%; }
+    .btn-outline { background:white; color:#0f172a; border:1px solid #cbd5e1; height:48px; width:100%; }
+    .btn[disabled], .btn-primary[disabled] { opacity:.6; cursor:not-allowed; }
+    .contact-card { border-radius: 22px; padding:20px; }
+    .contact-grid { display:grid; gap:16px; grid-template-columns: 1fr 1fr; }
+    .contact-grid .full { grid-column:1/-1; }
+    .error-text { color: var(--error); font-size: 13px; margin-top:6px; }
+    .message { padding:16px; font-size:14px; }
+    .message.error { background: var(--error-bg); border:1px solid #fecaca; color: var(--error); }
+    .submit-receipt {
+      padding:32px; text-align:center; box-shadow:0 1px 3px rgba(15,23,42,.08);
+    }
+    .submit-receipt h2 { margin:0; font-size:32px; letter-spacing:-.02em; }
+    .submit-receipt p { color: var(--muted); }
+    .receipt-band {
+      margin-top:18px; background:var(--orange-soft); color:var(--orange); font-weight:700;
+      padding:14px 16px; border-radius:14px; font-size:14px;
+    }
+    .visual { border-radius: 40px; overflow:hidden; box-shadow: 0 20px 60px rgba(15,23,42,.12); }
+    .visual-inner { padding:16px; }
+    .visual-card {
+      border:1px solid rgba(15,23,42,.05); border-radius: 28px; overflow:hidden; background:black;
+    }
+    .visual-card img { width:100%; height: 520px; object-fit: cover; object-position: center; }
+    .trust { padding: 0 0 10px; }
+    .trust-grid { display:grid; gap:16px; grid-template-columns: repeat(3, 1fr); }
+    .mini-card { border-radius:20px; padding:16px; font-size:14px; color:#334155; box-shadow:0 1px 3px rgba(15,23,42,.05); }
+    .offers { padding: 0 0 32px; }
+    .offers-grid { display:grid; gap:24px; grid-template-columns: repeat(4, 1fr); }
+    .offer-card {
+      border-radius:24px; padding:24px; box-shadow:0 1px 3px rgba(15,23,42,.06); cursor:pointer; transition:.18s ease;
+    }
+    .offer-card:hover { transform: translateY(-4px); box-shadow:0 10px 24px rgba(15,23,42,.08); }
+    .offer-badge { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.14em; }
+    .offer-card h3 { margin:10px 0 0; font-size:22px; }
+    .offer-card p { margin:10px 0 0; color: var(--muted); font-size:14px; }
+    .offer-price { margin-top:18px; font-size:42px; line-height:1; font-weight:800; color:var(--orange); letter-spacing:-.04em; }
+    .offer-primary { margin-top:8px; font-size:14px; font-weight:700; }
+    .offer-secondary { margin-top:14px; color: var(--muted); font-size:14px; }
+    .offer-button {
+      margin-top:18px; width:100%; background:var(--orange); color:white; padding:12px 14px; text-align:center;
+    }
+    .contact-section { padding: 0 0 80px; }
+    .contact-wrap { border-radius:32px; padding:32px; box-shadow:0 1px 3px rgba(15,23,42,.06); }
+    .contact-layout { display:grid; gap:24px; grid-template-columns: 1fr 2fr; }
+    .muted { color: var(--muted); }
+    .hidden { display:none !important; }
+    .stop-list { display:grid; gap:12px; }
+    .stop-item { display:grid; gap:12px; grid-template-columns: 1fr 180px 56px; padding:16px; border:1px solid var(--line); border-radius:18px; }
+    .remove-btn {
+      display:grid; place-items:center; border:none; background:#f8fafc; border-radius:16px; cursor:pointer; color:#475569;
+    }
+    .section-title { font-weight:700; color:#0f172a; font-size:18px; }
+    @media (max-width: 1100px) {
+      .hero-grid { grid-template-columns: 1fr; }
+      .offers-grid { grid-template-columns: repeat(2, 1fr); }
+      .trust-grid { grid-template-columns: 1fr; }
+      .visual-card img { height: 420px; }
+    }
+    @media (max-width: 760px) {
+      .nav { display:none; }
+      .container { width: min(100% - 20px, 1200px); }
+      .hero { padding-top: 24px; }
+      .header-inner { padding: 10px 0; }
+      .brand img { height: 34px; }
+      .brand-title { font-size: 16px; }
+      .hero-grid { gap: 18px; }
+      .form-grid, .contact-grid, .toggle-grid, .contact-layout { grid-template-columns: 1fr; }
+      .offers-grid { grid-template-columns: 1fr; }
+      .stop-item { grid-template-columns: 1fr; }
+      .visual-card img { height: 300px; }
+      .summary-box .price { font-size: 42px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="container header-inner">
+      <div>
+        <div class="brand">
+          <img src="assets/logo.png" alt="Copenhagen Travel Coaches" />
+          <div class="brand-title">Copenhagen Travel Coaches</div>
+        </div>
+        <div class="brand-sub">Buskørsel i København og omegn</div>
+      </div>
+      <nav class="nav">
+        <a href="#price-anchor">Prisberegner</a>
+        <a href="#fleet">Flåde</a>
+        <a href="#kontakt">Kontakt</a>
+      </nav>
+      <a href="#price-anchor" class="cta-top">Få pris</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <div class="badge">Premium layout • Prisboks til venstre • Busser synlige med det samme</div>
+        <h1>En stærk første visning med prisberegner og busser side om side.</h1>
+        <p class="lead">Farverne fra den tidligere version er beholdt, og sektionen er nu bygget op så prisberegneren står som en tydelig boks til venstre, mens busbilledet er synligt med det samme ved åbning.</p>
+
+        <div id="price-anchor" class="hero-grid">
+          <div id="panelMount"></div>
+          <div id="fleet" class="visual">
+            <div class="visual-inner">
+              <div class="pill">Premium flåde</div>
+              <h2 style="margin:18px 0 0;font-size:clamp(28px,4vw,42px);letter-spacing:-.03em;">Busserne er synlige med det samme, når hjemmesiden åbner.</h2>
+              <p class="muted" style="margin:12px 0 0;max-width:760px;">Billedfeltet ligger direkte ved siden af prisberegneren, så brugeren straks ser både tilbudsboksen og de tre busser i første visning.</p>
+              <div style="margin-top:24px;border:1px solid rgba(15,23,42,.05);background:linear-gradient(180deg,#f8fafc,#eef2f7);padding:16px;border-radius:32px;">
+                <div class="visual-card">
+                  <img src="assets/hero-buses.png" alt="Tre sorte busser foran Bella Sky og Bella Center i København" />
+                </div>
+              </div>
+              <div class="trust-grid" style="margin-top:18px;">
+                <div class="mini-card">Synligt fra start</div>
+                <div class="mini-card">Boks som ønsket</div>
+                <div class="mini-card">Samme farver beholdt</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="trust">
+      <div class="container">
+        <div class="trust-grid">
+          <div class="mini-card">Svar hurtigt på forespørgsler</div>
+          <div class="mini-card">Fast pris uden skjulte gebyrer</div>
+          <div class="mini-card">Busser i flere størrelser</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="offers">
+      <div class="container">
+        <div class="offers-grid">
+          <article class="offer-card" data-preset="fixed">
+            <div class="offer-badge" style="color:var(--orange)">Populær</div>
+            <h3>Fast pris kørsel</h3>
+            <p>Kørsel i København eller lufthavntransfer til og fra København</p>
+            <div class="offer-price">1.495,-</div>
+            <div class="offer-primary">Op til 16 personer + guide</div>
+            <div class="offer-secondary">16–50 personer: 2.495,-</div>
+            <div class="offer-button">Send forespørgsel</div>
+          </article>
+
+          <article class="offer-card" data-preset="half">
+            <div class="offer-badge" style="color:#94a3b8">Fleksibel</div>
+            <h3>Kør som du vil</h3>
+            <p>Start og slut i København og omegn (4 timer)</p>
+            <div class="offer-price">2.995,-</div>
+            <div class="offer-primary">Op til 16 personer + guide</div>
+            <div class="offer-secondary">Over 16 personer: 4.495,-</div>
+            <div class="offer-button">Send forespørgsel</div>
+          </article>
+
+          <article class="offer-card" data-preset="full">
+            <div class="offer-badge" style="color:#94a3b8">Heldag</div>
+            <h3>Heldagstur</h3>
+            <p>Start og slut i København og omegn (8 timer)</p>
+            <div class="offer-price">5.995,-</div>
+            <div class="offer-primary">Op til 16 personer + guide</div>
+            <div class="offer-secondary">Over 16 personer: 7.995,-</div>
+            <div class="offer-button">Send forespørgsel</div>
+          </article>
+
+          <article class="offer-card" data-preset="fixed">
+            <div class="offer-badge" style="color:#16a34a">Fordel</div>
+            <h3>Loyalitet</h3>
+            <p>Få hver 6. tur gratis</p>
+            <div class="offer-price">Gratis tur</div>
+            <div class="offer-secondary">Billigste tur gratis indenfor 1 år</div>
+            <div class="offer-button">Send forespørgsel</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="kontakt" class="contact-section">
+      <div class="container">
+        <div class="contact-wrap contact-card">
+          <div class="contact-layout">
+            <div>
+              <div style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#737373;">Kontakt</div>
+              <h2 style="margin:12px 0 0;font-size:34px;letter-spacing:-.03em;">Klar til næste justering?</h2>
+            </div>
+            <div class="muted">Prisberegneren står nu som en tydelig separat boks i venstre side, og busserne er placeret direkte i højre billedfelt over folden, så de er synlige straks brugeren lander på siden.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const EMAIL_SERVICE = "service_z39qe1b";
+    const EMAIL_TEMPLATE = "template_l5tzw6p";
+    const EMAIL_PUBLIC_KEY = "kKMXBNin0LuoXXtUw";
+
+    const state = {
+      outboundTrip: createTrip(),
+      includeReturnTrip: false,
+      returnTrip: createTrip(),
+      showContactForm: false,
+      contact: { name: "", countryCode: "+45", phone: "", email: "" },
+      submitted: false,
+      submitError: "",
+      isSending: false,
+    };
+
+    function createTrip() {
+      return {
+        pickupLocation: "",
+        pickupDate: "",
+        pickupTime: "",
+        destination: "",
+        passengerCount: 50,
+        distanceKm: "",
+        drivingHours: "",
+        useStorebaelt: false,
+        useOeresund: false,
+        stops: [],
+      };
+    }
+
+    function uid() {
+      return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    }
+
+    function validateEmail(email) {
+      const trimmed = email.trim();
+      return trimmed.includes("@") && trimmed.indexOf("@") > 0 && trimmed.split("@")[1]?.includes(".");
+    }
+
+    function validatePhone(phone, countryCode) {
+      const rule = ${JSON.stringify([ { code: "+45", label: "Danmark (+45)", lengths: [8] }, { code: "+46", label: "Sverige (+46)", lengths: [7,8,9] }, { code: "+47", label: "Norge (+47)", lengths: [8] }, { code: "+44", label: "Storbritannien (+44)", lengths: [10] }, { code: "+49", label: "Tyskland (+49)", lengths: [10,11] }, { code: "+1", label: "USA/Canada (+1)", lengths: [10] } ])}.find((item) => item.code === countryCode);
+      const digits = String(phone || "").replace(/\D/g, "");
+      if (!rule) return digits.length >= 6;
+      return rule.lengths.includes(digits.length);
+    }
+
+    function formatCurrency(value) {
+      return new Intl.NumberFormat("da-DK", { style: "currency", currency: "DKK", maximumFractionDigits: 0 }).format(Math.round(value || 0));
+    }
+
+    function calculateTripPrice(trip) {
+      const distanceKm = Number(trip.distanceKm) || 0;
+      const drivingHours = Number(trip.drivingHours) || 0;
+      const waitingMinutes = trip.stops.reduce((sum, stop) => sum + (Number(stop.waitMinutes) || 0), 0);
+      const waitingHours = waitingMinutes / 60;
+      const subtotal =
+        distanceKm * 11 +
+        drivingHours * 500 +
+        waitingHours * 800 +
+        (trip.useStorebaelt ? 2000 : 0) +
+        (trip.useOeresund ? 3600 : 0);
+      return Math.max(2799, subtotal);
+    }
+
+    function presetTrip(type) {
+      state.includeReturnTrip = false;
+      state.returnTrip = createTrip();
+      state.showContactForm = false;
+      state.submitted = false;
+      state.submitError = "";
+      state.isSending = false;
+
+      if (type === "fixed") {
+        state.outboundTrip = { ...createTrip(), pickupLocation: "København", destination: "København" };
+      }
+      if (type === "half") {
+        state.outboundTrip = { ...createTrip(), pickupLocation: "København", destination: "København", drivingHours: "4" };
+      }
+      if (type === "full") {
+        state.outboundTrip = { ...createTrip(), pickupLocation: "København", destination: "København", drivingHours: "8" };
+      }
+      render();
+      document.getElementById("price-anchor")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function stopSummary(stops) {
+      return stops.length > 0
+        ? stops.map((stop, index) => `${index + 1}. ${stop.location || "Ikke angivet"} (${stop.waitMinutes || 0} min ventetid)`).join(" | ")
+        : "Ingen stop";
+    }
+
+    function handleSend() {
+      if (!state.showContactForm) {
+        state.showContactForm = true;
+        render();
+        return;
+      }
+      if (!state.contact.name.trim() || !validateEmail(state.contact.email) || !validatePhone(state.contact.phone, state.contact.countryCode)) {
+        render();
+        return;
+      }
+
+      state.submitError = "";
+      state.isSending = true;
+      render();
+
+      emailjs.send(
+        EMAIL_SERVICE,
+        EMAIL_TEMPLATE,
+        {
+          navn: state.contact.name,
+          telefon: `${state.contact.countryCode} ${state.contact.phone}`,
+          email: state.contact.email,
+          fra: state.outboundTrip.pickupLocation || "Ikke angivet",
+          dato: state.outboundTrip.pickupDate || "Ikke angivet",
+          tidspunkt: state.outboundTrip.pickupTime || "Ikke angivet",
+          til: state.outboundTrip.destination || "Ikke angivet",
+          passagerer: String(state.outboundTrip.passengerCount || "Ikke angivet"),
+          distance: state.outboundTrip.distanceKm || "Ikke angivet",
+          timer: state.outboundTrip.drivingHours || "Ikke angivet",
+          stop: stopSummary(state.outboundTrip.stops),
+          storebaelt: state.outboundTrip.useStorebaelt ? "Ja" : "Nej",
+          oeresund: state.outboundTrip.useOeresund ? "Ja" : "Nej",
+          retur: state.includeReturnTrip ? "Ja" : "Nej",
+          retur_fra: state.includeReturnTrip ? state.returnTrip.pickupLocation || "Ikke angivet" : "Ingen retur",
+          retur_dato: state.includeReturnTrip ? state.returnTrip.pickupDate || "Ikke angivet" : "Ingen retur",
+          retur_tidspunkt: state.includeReturnTrip ? state.returnTrip.pickupTime || "Ikke angivet" : "Ingen retur",
+          retur_til: state.includeReturnTrip ? state.returnTrip.destination || "Ikke angivet" : "Ingen retur",
+          retur_passagerer: state.includeReturnTrip ? String(state.returnTrip.passengerCount || "Ikke angivet") : "Ingen retur",
+          retur_distance: state.includeReturnTrip ? state.returnTrip.distanceKm || "Ikke angivet" : "Ingen retur",
+          retur_timer: state.includeReturnTrip ? state.returnTrip.drivingHours || "Ikke angivet" : "Ingen retur",
+          retur_stop: state.includeReturnTrip ? stopSummary(state.returnTrip.stops) : "Ingen retur",
+          retur_storebaelt: state.includeReturnTrip ? (state.returnTrip.useStorebaelt ? "Ja" : "Nej") : "Ingen retur",
+          retur_oeresund: state.includeReturnTrip ? (state.returnTrip.useOeresund ? "Ja" : "Nej") : "Ingen retur",
+          pris: formatCurrency(grandTotal()),
+        },
+        { publicKey: EMAIL_PUBLIC_KEY }
+      )
+      .then(() => {
+        state.submitted = true;
+        state.isSending = false;
+        render();
+        requestAnimationFrame(() => {
+          document.getElementById("calculator-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      })
+      .catch(() => {
+        state.submitError = "Der opstod en fejl ved afsendelse. Prøv igen.";
+        state.isSending = false;
+        render();
+      });
+    }
+
+    function grandTotal() {
+      const outbound = calculateTripPrice(state.outboundTrip);
+      const ret = calculateTripPrice(state.returnTrip);
+      return state.includeReturnTrip ? outbound + ret : outbound;
+    }
+
+    function renderStops(stops, tripType) {
+      if (!stops.length) return "";
+      return `
+        <div class="stop-list">
+          ${stops.map((stop, index) => `
+            <div class="stop-item">
+              <input placeholder="Stop ${index + 1}" value="${escapeHtml(stop.location)}" data-stop-location="${tripType}" data-id="${stop.id}" />
+              <select data-stop-wait="${tripType}" data-id="${stop.id}">
+                ${Array.from({ length: 33 }, (_, i) => i * 15).map(minutes => `<option value="${minutes}" ${String(stop.waitMinutes) === String(minutes) ? "selected" : ""}>${minutes === 0 ? "0 min" : `${minutes} min`}</option>`).join("")}
+              </select>
+              <button class="remove-btn" type="button" data-remove-stop="${tripType}" data-id="${stop.id}">✕</button>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;");
+    }
+
+    function tripFields(trip, type) {
+      return `
+        <div class="form-grid">
+          <div class="full">
+            <label>Afhentningssted</label>
+            <input data-field="pickupLocation" data-trip="${type}" value="${escapeHtml(trip.pickupLocation)}" placeholder="F.eks. Hotel d’Angleterre, København" />
+          </div>
+          <div>
+            <label>Dato for afhentning</label>
+            <input type="date" data-field="pickupDate" data-trip="${type}" value="${escapeHtml(trip.pickupDate)}" />
+          </div>
+          <div>
+            <label>Tid for afhentning</label>
+            <input type="time" data-field="pickupTime" data-trip="${type}" value="${escapeHtml(trip.pickupTime)}" />
+          </div>
+          <div>
+            <label>Antal personer</label>
+            <input type="number" min="1" data-field="passengerCount" data-trip="${type}" value="${escapeHtml(trip.passengerCount)}" />
+          </div>
+          <div class="full">
+            <label>Stop undervejs</label>
+            <button type="button" class="btn btn-dark" data-add-stop="${type}">Tilføj stop</button>
+            <div style="margin-top:12px;">${renderStops(trip.stops, type)}</div>
+          </div>
+          <div class="full">
+            <label>Destination</label>
+            <input data-field="destination" data-trip="${type}" value="${escapeHtml(trip.destination)}" placeholder="F.eks. Aarhus C" />
+          </div>
+          <div>
+            <label>Distance (km)</label>
+            <input type="number" min="0" step="1" data-field="distanceKm" data-trip="${type}" value="${escapeHtml(trip.distanceKm)}" placeholder="F.eks. 180" />
+          </div>
+          <div>
+            <label>Tid i bussen (timer)</label>
+            <input type="number" min="0" step="0.25" data-field="drivingHours" data-trip="${type}" value="${escapeHtml(trip.drivingHours)}" placeholder="F.eks. 2.5" />
+          </div>
+          <div class="full toggle-grid">
+            <label class="toggle-row"><span><strong>Storebælt</strong><br><small>+ ${formatCurrency(2000)}</small></span><input type="checkbox" data-field="useStorebaelt" data-trip="${type}" ${trip.useStorebaelt ? "checked" : ""} style="width:auto;height:auto;" /></label>
+            <label class="toggle-row"><span><strong>Øresund</strong><br><small>+ ${formatCurrency(3600)}</small></span><input type="checkbox" data-field="useOeresund" data-trip="${type}" ${trip.useOeresund ? "checked" : ""} style="width:auto;height:auto;" /></label>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderPanel() {
+      const outboundPrice = calculateTripPrice(state.outboundTrip);
+      const returnPrice = calculateTripPrice(state.returnTrip);
+      const phoneTouched = state.contact.phone.trim().length > 0;
+      const emailTouched = state.contact.email.trim().length > 0;
+      const phoneValid = validatePhone(state.contact.phone, state.contact.countryCode);
+      const emailValid = validateEmail(state.contact.email);
+
+      if (state.submitted) {
+        return `
+          <div id="calculator-panel" class="panel submit-receipt">
+            <h2>Tak for din forespørgsel</h2>
+            <p>Du modtager en bekræftelse på mail. Vi vender tilbage hurtigst muligt.</p>
+            <div class="receipt-band">Vi svarer typisk indenfor 10–30 minutter.</div>
+            <p style="margin-top:16px;font-size:14px;">Har du brug for hurtigt svar, kan du også kontakte os direkte.</p>
+          </div>
+        `;
+      }
+
+      return `
+        <div id="calculator-panel" class="panel">
+          <div class="panel-head">
+            <div class="pill">Få pris</div>
+            <h2>Beregn pris</h2>
+            <p>Udfyld og se din pris med det samme.</p>
+          </div>
+          <div class="panel-body">
+            ${tripFields(state.outboundTrip, "outbound")}
+
+            ${!state.includeReturnTrip ? `
+              <button type="button" class="btn btn-outline" id="add-return-btn">Tilføj returkørsel</button>
+            ` : `
+              <div class="return-box">
+                <div class="section-title">Returkørsel</div>
+                <p class="muted" style="margin-top:6px;font-size:14px;">Separat tur med egen pris.</p>
+                <div style="margin-top:18px;">${tripFields(state.returnTrip, "return")}</div>
+                <div class="return-box" style="margin-top:18px;">
+                  <div class="muted" style="font-size:14px;">Retur</div>
+                  <div class="price">${formatCurrency(returnPrice)}</div>
+                </div>
+              </div>
+            `}
+
+            <div class="summary-box">
+              <div class="muted" style="font-size:14px;">Samlet pris</div>
+              <div class="price">${formatCurrency(grandTotal())}</div>
+            </div>
+
+            <button type="button" class="btn btn-primary" id="submit-btn" ${state.isSending ? "disabled" : ""}>
+              ${state.isSending ? "Sender..." : "Send forespørgsel"}
+            </button>
+
+            ${state.showContactForm ? `
+              <div class="contact-card">
+                <div style="margin-bottom:16px;">
+                  <div class="section-title">Kontaktoplysninger</div>
+                  <p class="muted" style="margin:6px 0 0;font-size:14px;">Udfyld navn, telefon og e-mail for at sende forespørgslen.</p>
+                </div>
+                <div class="contact-grid">
+                  <div class="full">
+                    <label>Navn</label>
+                    <input data-contact="name" value="${escapeHtml(state.contact.name)}" placeholder="Dit navn" />
+                  </div>
+                  <div>
+                    <label>Landekode</label>
+                    <select data-contact="countryCode">
+                      ${${JSON.stringify([ { code: "+45", label: "Danmark (+45)" }, { code: "+46", label: "Sverige (+46)" }, { code: "+47", label: "Norge (+47)" }, { code: "+44", label: "Storbritannien (+44)" }, { code: "+49", label: "Tyskland (+49)" }, { code: "+1", label: "USA/Canada (+1)" } ])}.map(item => `<option value="${item.code}" ${item.code === state.contact.countryCode ? "selected" : ""}>${item.label}</option>`).join("")}
+                    </select>
+                  </div>
+                  <div>
+                    <label>Telefon</label>
+                    <input data-contact="phone" value="${escapeHtml(state.contact.phone)}" placeholder="Telefonnummer" />
+                    ${phoneTouched && !phoneValid ? `<div class="error-text">Telefonnummeret ser ikke korrekt ud.</div>` : ""}
+                  </div>
+                  <div class="full">
+                    <label>E-mail</label>
+                    <input type="email" data-contact="email" value="${escapeHtml(state.contact.email)}" placeholder="din@email.dk" />
+                    ${emailTouched && !emailValid ? `<div class="error-text">E-mail skal indeholde @ og være udfyldt korrekt.</div>` : ""}
+                  </div>
+                </div>
+                <button type="button" class="btn btn-primary" id="contact-submit-btn" style="margin-top:18px;" ${state.isSending ? "disabled" : ""}>${state.isSending ? "Sender..." : "Send forespørgsel"}</button>
+              </div>
+            ` : ""}
+
+            ${state.submitError ? `<div class="message error">${state.submitError}</div>` : ""}
+          </div>
+        </div>
+      `;
+    }
+
+    function bindEvents() {
+      document.querySelectorAll(".offer-card").forEach((card) => {
+        card.addEventListener("click", () => presetTrip(card.dataset.preset));
+      });
+
+      document.getElementById("add-return-btn")?.addEventListener("click", () => {
+        state.includeReturnTrip = true;
+        render();
+      });
+
+      document.getElementById("submit-btn")?.addEventListener("click", handleSend);
+      document.getElementById("contact-submit-btn")?.addEventListener("click", handleSend);
+
+      document.querySelectorAll("[data-field]").forEach((el) => {
+        el.addEventListener("input", (e) => {
+          const trip = e.target.dataset.trip === "return" ? state.returnTrip : state.outboundTrip;
+          const key = e.target.dataset.field;
+          trip[key] = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+          render();
+        });
+        el.addEventListener("change", (e) => {
+          const trip = e.target.dataset.trip === "return" ? state.returnTrip : state.outboundTrip;
+          const key = e.target.dataset.field;
+          trip[key] = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+          render();
+        });
+      });
+
+      document.querySelectorAll("[data-contact]").forEach((el) => {
+        el.addEventListener("input", (e) => {
+          state.contact[e.target.dataset.contact] = e.target.value;
+          render();
+        });
+        el.addEventListener("change", (e) => {
+          state.contact[e.target.dataset.contact] = e.target.value;
+          render();
+        });
+      });
+
+      document.querySelectorAll("[data-add-stop]").forEach((el) => {
+        el.addEventListener("click", () => {
+          const trip = el.dataset.addStop === "return" ? state.returnTrip : state.outboundTrip;
+          trip.stops.push({ id: uid(), location: "", waitMinutes: 0 });
+          render();
+        });
+      });
+
+      document.querySelectorAll("[data-remove-stop]").forEach((el) => {
+        el.addEventListener("click", () => {
+          const trip = el.dataset.removeStop === "return" ? state.returnTrip : state.outboundTrip;
+          trip.stops = trip.stops.filter((stop) => stop.id !== el.dataset.id);
+          render();
+        });
+      });
+
+      document.querySelectorAll("[data-stop-location]").forEach((el) => {
+        el.addEventListener("input", () => {
+          const trip = el.dataset.stopLocation === "return" ? state.returnTrip : state.outboundTrip;
+          const stop = trip.stops.find((s) => s.id === el.dataset.id);
+          if (stop) stop.location = el.value;
+        });
+      });
+
+      document.querySelectorAll("[data-stop-wait]").forEach((el) => {
+        el.addEventListener("change", () => {
+          const trip = el.dataset.stopWait === "return" ? state.returnTrip : state.outboundTrip;
+          const stop = trip.stops.find((s) => s.id === el.dataset.id);
+          if (stop) stop.waitMinutes = Number(el.value) || 0;
+          render();
+        });
+      });
+    }
+
+    function render() {
+      document.getElementById("panelMount").innerHTML = renderPanel();
+      bindEvents();
+    }
+
+    emailjs.init({ publicKey: EMAIL_PUBLIC_KEY });
+    render();
+  </script>
+</body>
+</html>
